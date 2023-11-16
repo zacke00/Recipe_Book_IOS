@@ -1,9 +1,3 @@
-//
-//  Exam_PG5062Tests.swift
-//  Exam-PG5062Tests
-//
-//  Created by zakaria berglund on 13/11/2023.
-//
 
 import XCTest
 @testable import Exam_PG5062

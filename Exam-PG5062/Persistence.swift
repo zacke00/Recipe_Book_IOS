@@ -1,9 +1,4 @@
-//
-//  Persistence.swift
-//  Exam-PG5062
-//
-//  Created by zakaria berglund on 13/11/2023.
-//
+
 
 import CoreData
 
@@ -13,10 +8,7 @@ struct PersistenceController {
     static var preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
         let viewContext = result.container.viewContext
-        for _ in 0..<10 {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-        }
+        
         do {
             try viewContext.save()
         } catch {

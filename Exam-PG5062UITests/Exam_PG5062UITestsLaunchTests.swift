@@ -1,9 +1,4 @@
-//
-//  Exam_PG5062UITestsLaunchTests.swift
-//  Exam-PG5062UITests
-//
-//  Created by zakaria berglund on 13/11/2023.
-//
+
 
 import XCTest
 
