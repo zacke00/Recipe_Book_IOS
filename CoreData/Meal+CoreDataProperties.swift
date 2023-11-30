@@ -24,27 +24,21 @@ extension Meal {
     @NSManaged public var strYoutube: String?
     @NSManaged public var category: Category?
     @NSManaged public var area: Area?
-    @NSManaged public var ingredients: NSSet?
+    @NSManaged public var measurements: NSSet?
 
 }
 
-// MARK: Generated accessors for ingredients
-extension Meal {
-
-    @objc(addIngredientsObject:)
-    @NSManaged public func addToIngredients(_ value: Ingredients)
-
-    @objc(removeIngredientsObject:)
-    @NSManaged public func removeFromIngredients(_ value: Ingredients)
-
-    @objc(addIngredients:)
-    @NSManaged public func addToIngredients(_ values: NSSet)
-
-    @objc(removeIngredients:)
-    @NSManaged public func removeFromIngredients(_ values: NSSet)
-
-}
 
 extension Meal : Identifiable {
+    @objc(addMeasurementsObject:)
+     @NSManaged public func addToMeasurements(_ value: Measurements)
 
+     @objc(removeMeasurementsObject:)
+     @NSManaged public func removeFromMeasurements(_ value: Measurements)
+
+     @objc(addMeasurements:)
+     @NSManaged public func addToMeasurements(_ values: NSSet)
+
+     @objc(removeMeasurements:)
+     @NSManaged public func removeFromMeasurements(_ values: NSSet)
 }

@@ -11,23 +11,27 @@ import CoreData
 enum Selection: String, CaseIterable {
     case category = "Category"
     case area = "Area"
-    
-}
+    case ingredients = "Ingredients"
+} //for the picker to make a choice
 
 
 
 struct SearchView: View {
     
     
-    var areaDemo: [String]
-    
-    
+    @State private var showAlternatives = true //Show category or area labels
     @State var inputSearchTerm: String = ""
     @State private var fetchedMeals: [MealDetails] = []
     @State private var selectedName: Selection = .category
     
+    @StateObject var viewModel = MealViewModel()
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.colorScheme) private var colorScheme
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Ingredients.strIngredient, ascending: true)],
+        animation: .default)
+    private var ingredients: FetchedResults<Ingredients>
     
     
     @FetchRequest(
@@ -45,12 +49,13 @@ struct SearchView: View {
         animation: .default)
     private var meals: FetchedResults<Meal>
     
-
+    
+   
     var body: some View {
         
         NavigationView {
-            ZStack{
-                Theme.primary.ignoresSafeArea(.all)
+            ZStack(alignment: .top){
+                LinearGradient(colors: [Theme.primary, Theme.secoundary], startPoint: .top, endPoint: .bottom).ignoresSafeArea(.all)
                 VStack {
                     
                     VStack{
@@ -58,163 +63,141 @@ struct SearchView: View {
                         HStack{
                             TextField("Search", text: $inputSearchTerm)
                                 .autocorrectionDisabled()
-                            Button(action: updateMeals) {
-                                Image(systemName: "magnifyingglass.circle.fill")
-                                                                .resizable()
-                                                                .frame(width: 30,height: 30)
-                                                                .foregroundColor(Theme.third)
-                            }
-                            .foregroundColor(Theme.text)
+                                .onChange(of: inputSearchTerm) { newValue in
+                                                    updateMeals()
+                                                }
                             
-                        }
+                                Image(systemName: "magnifyingglass.circle.fill")
+                                    .resizable()
+                                    .frame(width: 30,height: 30)
+                                    
+                            
+                        }.foregroundColor(Theme.ColoredText)
                         
                         .padding()
-                        .border(Theme.secoundary)
+                        .border(Theme.ColoredText)
                         .cornerRadius(10)
                         .padding([.top,.bottom],0)
                         .padding([.trailing,.leading])
-                        
-                        ScrollView {
-                            VStack{
-                                
-                                
-                                Picker("Select an item", selection: $selectedName) {
-                                    ForEach(Selection.allCases, id: \.self) { name in
-                                        Text(name.rawValue)
+                        VStack{
+                            
+                            
+                            Picker("Select an item", selection: $selectedName) {
+                                ForEach(Selection.allCases, id: \.self) { name in
+                                    Text(name.rawValue)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .padding([.leading,.trailing],5)
+                            
+                            VStack(alignment: .trailing){
+                                if selectedName == .ingredients{
+                                }else if selectedName == .category{
+                                    HStack{
+                                        //Button for Category show or not
+                                        Button {
+                                            
+                                            self.showAlternatives.toggle()
+                                        } label: {
+                                            
+                                            Image(systemName: showAlternatives ? "chevron.up.circle" : "chevron.down.circle")
+                                                .resizable()
+                                                    .frame(width: 20,height: 20)
+                                                    .padding(.top, 15)
+                                                    .foregroundColor(Theme.ColoredText)
+                                        }
+                                        .buttonStyle(FlatLinkStyle())
+                                        .padding(.leading, 60)
+                                        .frame(height: 0)
+                                        Spacer()
+                                    }
+                                    //Button for Area show or not
+                                } else if selectedName == .area {
+                                    HStack{
+                                        Button {
+                                            self.showAlternatives.toggle()
+                                        } label: {
+                                            Image(systemName: showAlternatives ? "chevron.up.circle" : "chevron.down.circle")
+                                                .resizable()
+                                                .frame(width: 20,height: 20)
+                                                    .padding(.top, 15)
+                                                    
+                                                    .foregroundColor(Theme.ColoredText)
+                                            
+                                        }
+                                        .buttonStyle(FlatLinkStyle())
+                                        .padding(0)
+                                        .frame(height: 0)
                                     }
                                 }
-                                .pickerStyle(.segmented)
-                                .padding([.leading,.trailing],5)
+                            }.padding(.bottom, 5)
+                            //Show what section that we are on. Is it category Area Ingredients?
+                            if showAlternatives {
+                                testContentView(
+                                    selectedName: selectedName,
+                                    categories: categories,
+                                    areas: areas,
+                                    ingredients: ingredients
+                                    
+                                    
+                                )
+                            } else if !showAlternatives && selectedName == .ingredients{
+                                testContentView(
+                                    selectedName: selectedName,
+                                    categories: categories,
+                                    areas: areas,
+                                    ingredients: ingredients
+                                    
+                                )
                             }
-                            
-                            
-                            testContentView(
-                                selectedName: selectedName,
-                                categories: categories,
-                                areas: areas,
-                                fetchedMeals: fetchedMeals, // Pass fetchedMeals here
-                                saveMealAction: saveMeal,
-                                inputSearchTerm: inputSearchTerm
-                            )
                             
                         }
                         
                         
-                        
                     }.padding([.top,.bottom], 10)
-                }
-            }.toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        deleteItems()
-                    } label: {
-                        Label("Delete Data", systemImage: "trash")
-                    }.foregroundColor(Theme.text)
+                    //If ingredients then we dont show the Button to hide the category or area section
+                    if selectedName == .ingredients{} else {
+                        ScrollableMealView(meals: inputSearchTerm.isEmpty ? [] : fetchedMeals, saveMealAction: viewModel.saveMeal, viewModel: viewModel)
+                    }
                     
                 }
-                
-            }.padding(0)
-        }
-    }
-    
-    
-    func deleteItems() {
-        withAnimation {
-            for meal in meals {
-                viewContext.delete(meal)
-            }
-            do {
-                try viewContext.save()
-            } catch {
-                print("Error deleting items: \(error)")
-            }
-        }
-    }
-    
-    func generateAlphabetLetters() -> [String] {
-        let letters = (0..<26).map { i in
-            return "\(Character(UnicodeScalar("a".unicodeScalars.first!.value + UInt32(i))!))"
-        }
-        return letters
-    }
-    
-    
-    
-    func saveMeal(mealDetails: MealDetails) {
-        let context = PersistenceController.shared.container.viewContext
-        context.perform {
-            // Check if the meal already exists in the database
-            let fetchRequest: NSFetchRequest<Meal> = Meal.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "idMeal == %@", mealDetails.idMeal )
-            
-            do {
-                let results = try context.fetch(fetchRequest)
-                if results.isEmpty {
-                    // Save the meal if it doesn't exist
-                    let newMeal = Meal(context: context)
-                    newMeal.idMeal = mealDetails.idMeal
-                    newMeal.strMeal = mealDetails.strMeal
-                    newMeal.strTags = mealDetails.strTags
-                    newMeal.strInstructions = mealDetails.strInstructions
-                    newMeal.strMealThumb = mealDetails.strMealThumb
-                    newMeal.strYoutube = mealDetails.strYoutube
-
-                    // Set the Category and Area
-                    newMeal.category = try fetchOrCreateCategory(withName: mealDetails.strCategory, in: context)
-                    newMeal.area = try fetchOrCreateArea(withName: mealDetails.strArea, in: context)
-
-                    try context.save()
-                }
-            } catch {
-                print("Failed to save meal: \(error)")
             }
         }
     }
     
     func updateMeals() {
+        let searchTerm = inputSearchTerm.lowercased()
+        if let cachedMeals = MealCache.shared.getMeals(forCategory: searchTerm) {
+            self.fetchedMeals = cachedMeals
+        } else {
+            fetchAndUpdateMeals()
+        }
+    }
+    private func fetchAndUpdateMeals() {
+        let searchTerm = inputSearchTerm
         Task {
-                fetchedMeals = await APIClient().fetchAPI(for: inputSearchTerm)
+            do {
+                let meals = try await APIClient().fetchAPI(for: searchTerm)
+                DispatchQueue.main.async {
+                    self.fetchedMeals = meals
+                    MealCache.shared.saveMeals(meals, forCategory: searchTerm)
+                }
+            } catch {
+                print("Error fetching meals: \(error)")
             }
-    }
-
-    func fetchOrCreateCategory(withName categoryName: String, in context: NSManagedObjectContext) throws -> Category {
-        let categoryFetchRequest: NSFetchRequest<Category> = Category.fetchRequest()
-        categoryFetchRequest.predicate = NSPredicate(format: "strCategory == %@", categoryName)
-        
-        let categories = try context.fetch(categoryFetchRequest)
-        if let category = categories.first {
-            return category
-        } else {
-            let newCategory = Category(context: context)
-            newCategory.strCategory = categoryName
-            return newCategory
         }
     }
-
-    func fetchOrCreateArea(withName areaName: String, in context: NSManagedObjectContext) throws -> Area {
-        let areaFetchRequest: NSFetchRequest<Area> = Area.fetchRequest()
-        areaFetchRequest.predicate = NSPredicate(format: "strArea == %@", areaName)
-        
-        let areas = try context.fetch(areaFetchRequest)
-        if let area = areas.first {
-            return area
-        } else {
-            let newArea = Area(context: context)
-            newArea.strArea = areaName
-            return newArea
-        }
-    }
+    
 }
-
 
 
 struct testContentView: View {
     let selectedName: Selection
     let categories: FetchedResults<Category>
     let areas: FetchedResults<Area>
-    let fetchedMeals: [MealDetails]
-    let saveMealAction: (MealDetails) -> Void
-    let inputSearchTerm: String
+    let ingredients: FetchedResults<Ingredients>
+    
+    
     
     var body: some View {
         switch selectedName {
@@ -222,10 +205,24 @@ struct testContentView: View {
             ScrollableCategoryView(categories: categories)
         case .area:
             ScrollableAreaView(area: areas)
+        case .ingredients:
+            ScrollableIngredientsView(ingredients: ingredients)
         }
-        ScrollableMealView(meals: inputSearchTerm.isEmpty ? [] : fetchedMeals, saveMealAction: saveMealAction)
+        
+        
+        
     }
+    
 }
 
 
-
+struct SaveConfirmationView: View {
+    var body: some View {
+        Text("Meal Saved Successfully!")
+            .foregroundColor(.white)
+            .padding()
+            .background(Color.green)
+            .cornerRadius(8)
+            .shadow(radius: 5)
+    }
+}
